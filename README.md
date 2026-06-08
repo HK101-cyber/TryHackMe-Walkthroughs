@@ -6,9 +6,10 @@ I complete legendary free TryHackMe rooms and document:
 
 ## Completed Rooms
 
+```markdown
 | Room | Difficulty | Walkthrough | Date |
 |------|------------|-------------|------|
-| Pickle Rick | Easy | [📝 Write-up](pickle-rick/README.md) | *In progress* |
+| Pickle Rick | Easy | [📝 Write-up](pickle-rick/README.md) | June 2026 |
 
 ## Planned Rooms (in order)
 
