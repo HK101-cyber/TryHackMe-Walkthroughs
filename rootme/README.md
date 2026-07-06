@@ -67,7 +67,8 @@ ping -c 4 10.10.X.X
 
 **Why `-c 4`:** Sends exactly 4 packets — enough to confirm the host is alive without flooding the network. TTL in the response also hints at the OS (TTL ~64 = Linux, TTL ~128 = Windows).
 
-![Ping confirms host is live](screenshots/1%20Ping.PNG)
+<img src="screenshots/1 Ping.PNG" alt="Ping confirms host is live">
+
 
 ---
 
@@ -92,7 +93,7 @@ nmap -sV -sC -Pn 10.10.X.X -oN nmap-rootme.txt
 
 No SSH credentials in scope yet. Apache on port 80 is the primary attack surface.
 
-![Nmap scan results](screenshots/2%20Nmap%20Scan.PNG)
+<img src="screenshots/2 Nmap Scan.PNG" alt="Nmap scan results">
 
 ---
 
@@ -123,7 +124,7 @@ gobuster dir \
 
 Two directories, one attack: upload the shell to `/panel/`, execute it from `/uploads/`. The path is clear.
 
-![Gobuster discovers /panel/ and /uploads/](screenshots/3%20gobuster.PNG)
+<img src="screenshots/3 gobuster.PNG" alt="Gobuster discovers /panel/ and /uploads/">
 
 ---
 
@@ -133,7 +134,7 @@ Two directories, one attack: upload the shell to `/panel/`, execute it from `/up
 
 Navigated to `http://10.10.X.X/panel/`. A file upload form is present — no authentication required. This is the vulnerability: an unauthenticated, publicly accessible file upload endpoint on a web server.
 
-![Upload form at /panel/](screenshots/4%20upload-form.PNG)
+<img src="screenshots/4 upload-form.PNG" alt="Upload form at /panel/">
 
 ---
 
@@ -181,7 +182,7 @@ Rename the shell and re-upload:
 cp shell.php shell.phtml
 ```
 
-![shell.phtml ready for upload](screenshots/5%20shell.phtml.PNG)
+<img src="screenshots/5 shell.phtml.PNG" alt="shell.phtml ready for upload">
 
 Verify the file locally before uploading:
 
@@ -189,11 +190,11 @@ Verify the file locally before uploading:
 ls -la shell.phtml
 ```
 
-![ls -la confirms shell.phtml](screenshots/6%20ls%20-la%20shell.phtml.PNG)
+<img src="screenshots/6 ls -la shell.phtml.PNG" alt="ls -la confirms shell.phtml">
 
 Upload `shell.phtml` via the panel — accepted. The filter only checks for `.php`, not `.phtml`.
 
-![Upload success — shell.phtml accepted](screenshots/7-upload-success.PNG)
+<img src="screenshots/7-upload-success.PNG" alt="Upload success — shell.phtml accepted">
 
 **Why this works:** The application is using a blacklist approach (blocking known bad extensions) rather than a whitelist approach (only allowing known safe extensions like `.jpg`, `.png`). Blacklists are always bypassable — there are too many valid PHP extensions for any blacklist to cover completely.
 
@@ -227,7 +228,7 @@ http://10.10.X.X/uploads/shell.phtml
 
 Apache executes the PHP file. The shell code runs, opens a socket back to our listener, and the connection is caught.
 
-![Netcat catches the reverse shell](screenshots/8%20nc%20shell.PNG)
+<img src="screenshots/8 nc shell.PNG" alt="Netcat catches the reverse shell">
 
 We're in as `www-data` — the Apache web server user. Low privileges, but a foothold.
 
@@ -254,7 +255,7 @@ export SHELL=bash
 
 **Why this matters:** Without stabilisation, running `sudo` or interactive programs crashes the shell. A stable TTY is required for reliable privilege escalation work.
 
-![Shell stabilised — full TTY](screenshots/9%20stabilize%20shell.PNG)
+<img src="screenshots/9 stabilize shell.PNG" alt="Shell stabilised — full TTY">
 
 ---
 
@@ -268,7 +269,7 @@ find / -type f -name "user.txt" 2>/dev/null
 
 **Why `2>/dev/null`:** Suppresses "Permission denied" errors from directories we can't read — keeps output clean and focused on actual results.
 
-![Find locates user.txt](screenshots/10%20find-user-txt.PNG)
+<img src="screenshots/10 find-user-txt.PNG" alt="Find locates user.txt">
 
 ```bash
 cat /var/www/user.txt
@@ -276,7 +277,7 @@ cat /var/www/user.txt
 
 ### 🚩 Flag 1 — User Flag
 
-![User flag captured](screenshots/11%20user-txt-flag.PNG)
+<img src="screenshots/11 user-txt-flag.PNG" alt="User flag captured">
 
 ---
 
@@ -293,7 +294,7 @@ find / -type f -perm -4000 2>/dev/null
 - `-perm -4000` — files with SUID bit set (the `4` in `4000` is the SUID bit)
 - `2>/dev/null` — suppress permission errors
 
-![SUID enumeration — python found](screenshots/12%20suid-find.PNG)
+<img src="screenshots/12 suid-find.PNG" alt="SUID enumeration — python found">
 
 **Critical finding:** `/usr/bin/python` has SUID set and is owned by root.
 
@@ -315,7 +316,7 @@ Referenced [GTFOBins — Python SUID](https://gtfobins.github.io/gtfobins/python
 - `-p` flag on `sh` preserves the elevated privileges passed from the SUID binary
 - Result: a root shell
 
-![Root shell obtained via Python SUID](screenshots/13%20root-shell.PNG)
+<img src="screenshots/13 root-shell.PNG" alt="Root shell obtained via Python SUID">
 
 Verify:
 ```bash
@@ -335,7 +336,7 @@ cat /root/root.txt
 
 ### 🚩 Flag 2 — Root Flag
 
-![Root flag captured](screenshots/14%20root-flag.PNG)
+<img src="screenshots/14 root-flag.PNG" alt="Root flag captured">
 
 ---
 
